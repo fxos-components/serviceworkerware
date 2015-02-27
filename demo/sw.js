@@ -1,4 +1,4 @@
-importScripts('../dist/sww.0.0.0.min.js');
+importScripts('../dist/sww.min.js');
 
 var worker = new self.ServiceWorkerWare();
 

@@ -11,7 +11,7 @@ var watch = require('gulp-watch');
 
 var getBundleName = function () {
   var version = require('./package.json').version;
-  return 'sww.' + version +  '.' + 'min';
+  return 'sww.min';
 };
 
 gulp.task('javascript', function() {
