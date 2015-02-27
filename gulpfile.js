@@ -10,7 +10,6 @@ var jshint = require('gulp-jshint');
 var watch = require('gulp-watch');
 
 var getBundleName = function () {
-  var version = require('./package.json').version;
   return 'sww.min';
 };
 

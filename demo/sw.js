@@ -2,6 +2,8 @@ importScripts('../dist/sww.min.js');
 
 var worker = new self.ServiceWorkerWare();
 
+// Simple middleware that just listen to SW livecycle events,
+// it wont handle any request.
 var SimpleWare = {
   onInstall: function() {
     console.log('On install');
@@ -15,7 +17,6 @@ var SimpleWare = {
   }
 };
 
-// Simple middleware that just listen to SW livecycle events
 worker.use(SimpleWare);
 
 // We precache known resources with the StaticCacher middleware
@@ -40,4 +41,10 @@ worker.get('virtual/.', function(request, response) {
 // Handles offline resources saved by the StaticCacher middleware,
 // also caches those resources not in the cache for next visit
 worker.use(new self.SimpleOfflineCache());
+worker.use(function(request, response) {
+  var res = response.clone();
+  res.headers.append('X-Powered-By', 'HTML5 ServiceWorkers FTW');
+
+  return Promise.resolve(res);
+});
 worker.init();
