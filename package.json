@@ -4,14 +4,17 @@
   "description": "ServiceWorker framework to deal with common task managing request, allowing easy extensibility",
   "main": "",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "http-server ."
   },
   "author": "Francisco Jordano <francisco@jordano.es>",
   "license": "MPL",
   "devDependencies": {
     "browserify": "^9.0.3",
     "gulp": "^3.8.11",
+    "gulp-jshint": "^1.9.2",
     "gulp-sourcemaps": "^1.3.0",
+    "gulp-webserver": "^0.9.0",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.0.0"
   }
