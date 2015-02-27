@@ -7,6 +7,7 @@ var buffer = require('vinyl-buffer');
 var sourcemaps = require('gulp-sourcemaps');
 var webserver = require('gulp-webserver');
 var jshint = require('gulp-jshint');
+var watch = require('gulp-watch');
 
 var getBundleName = function () {
   var version = require('./package.json').version;
@@ -41,6 +42,10 @@ gulp.task('webserver', function() {
         directoryListing: true,
         open: true
       }));
+});
+
+gulp.task('watch', function() {
+  gulp.watch('./lib/*', ['lint', 'javascript']);
 });
 
 gulp.task('lint', function() {

@@ -17,6 +17,6 @@ var SimpleWare = {
 };
 
 worker.use(SimpleWare);
-worker.use(new self.StaticCacher(['http://localhost:8000/demo/a.html']));
+worker.use(new self.StaticCacher(['a.html']));
 worker.use(new self.SimpleOfflineCache());
 worker.init();
