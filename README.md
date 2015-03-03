@@ -96,17 +96,19 @@ One important point is the fact that when you write a handler for using in your 
 
 ## Can I see some examples of middleware?
 
-Right we added 2 simple middlewares, one for precaching static content and a simple offline cache handler. They are available by default when you import this library.
+Right we added 2 simple middlewares to this package, one for precaching static content and a simple offline cache handler. They are available by default when you import this library.
 
-- StaticCacher: this will help you to specify any set of files to be cached during the ServiceWorker installation:
+* StaticCacher: this will help you to specify any set of files to be cached during the ServiceWorker installation:
 ```
 worker.use(new self.StaticCacher(['a.html', 'b.html' ...]));
 ```
 It saves the content in the default cache.
 
-- SimpleOfflineCache: will serve the contents of the default cache. Right now if it cannot find an element in the cache will perform a fetch and will save it to the cache.
+* SimpleOfflineCache: will serve the contents of the default cache. Right now if it cannot find an element in the cache will perform a fetch and will save it to the cache.
 (TODO: this should be configurable ;P)
 
+### More examples of middleware
+* [ZipCacher](https://github.com/arcturus/zipcacher) enables you to specify a zip file to cache your resources from.
 
 # Demo
 
