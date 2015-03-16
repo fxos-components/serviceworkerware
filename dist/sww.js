@@ -252,7 +252,7 @@ ServiceWorkerWare.prototype.use = function sww_use() {
     path = arguments[0];
     mw = arguments[1];
     var kind = typeof mw;
-    if (!mw || kind !== 'object' || kind !== 'function') {
+    if (!mw || !(kind === 'object' || kind === 'function')) {
       throw new Error('No middleware specified');
     }
     if (Router.prototype.methods.indexOf(arguments[2]) !== -1) {
