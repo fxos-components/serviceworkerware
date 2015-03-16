@@ -18,5 +18,8 @@
     "gulp-webserver": "^0.9.0",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.0.0"
+  },
+  "dependencies": {
+    "sw-cache-helper": "git+https://git@github.com/arcturus/sw-cache-helper.git"
   }
 }
