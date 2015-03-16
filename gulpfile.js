@@ -10,7 +10,7 @@ var jshint = require('gulp-jshint');
 var watch = require('gulp-watch');
 
 var getBundleName = function () {
-  return 'sww.min';
+  return 'sww';
 };
 
 gulp.task('javascript', function() {
