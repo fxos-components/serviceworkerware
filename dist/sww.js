@@ -149,7 +149,7 @@ StaticCacher.prototype.onInstall = function sc_onInstall() {
 module.exports = StaticCacher;
 
 },{"sw-cache-helper":6}],5:[function(require,module,exports){
-/* global fetch */
+/* global fetch, BroadcastChannel, clients */
 'use strict';
 
 var debug = 1 ? console.log.bind(console, '[ServiceWorkerWare]') : function(){};
@@ -272,6 +272,12 @@ ServiceWorkerWare.prototype.use = function sww_use() {
   if (handler) {
     this.router.add(method, path, handler);
   }
+  // XXX: Attaching the broadcastMessage to mw that implements onMessage.
+  // We should provide a way to get a reference to the SWW object and do
+  // the broadcast from there
+  if (typeof mw.onMessage === 'function') {
+    mw.broadcastMessage = this.broadcastMessage;
+  }
 };
 
 
@@ -287,9 +293,34 @@ ServiceWorkerWare.prototype.forwardEvent = function sww_forwardEvent(evt) {
       }
     );
     if (typeof mw[handlerName] !== 'undefined') {
-      mw[handlerName].call(mw.handler, evt);
+      mw[handlerName].call(mw, evt);
     }
   });
+};
+
+/**
+ * Broadcast a message to all worker clients
+ * @param msg Object the message
+ * @param channel String (Used just in Firefox Nightly) using broadcastchannel api to deliver
+ * the message, this parameter can be undefined as we listen for a channel undefined in the client.
+ */
+ServiceWorkerWare.prototype.broadcastMessage = function sww_broadcastMessage(msg, channel) {
+  // XXX: Until https://bugzilla.mozilla.org/show_bug.cgi?id=1130685 is fixed
+  // we can use BroadcastChannel API in Firefox Nightly
+  if (typeof BroadcastChannel === 'function') {
+    var bc = new BroadcastChannel(channel);
+    bc.postMessage(msg);
+    bc.close();
+    return Promise.resolve();
+  } else {
+    // This is suppose to be the way of broadcasting a message, unfortunately it's not working
+    // yet in Chrome Canary
+    return clients.matchAll().then(function(consumers) {
+      consumers.forEach(function(client) {
+        client.postMessage(msg);
+      });
+    });
+  }
 };
 
 module.exports = {
