@@ -1,6 +1,6 @@
 # Introduction
 
-An express like layer in top of ServiceWorkers to provide a way to easily plug functionality.
+An [Express](http://expressjs.com/)-like layer in top of `ServiceWorkers` to provide a way to easily plug functionality.
 
 ## Compatibility
 
@@ -9,31 +9,47 @@ Currently working in:
 - [Mozilla Nightly](https://blog.wanderview.com/sw-builds/)
 
 # Philosophy
-Following the same pattern than express framework, we can write middleware to handle our request, pipe them and build greater things.
 
-But with Servicworkers you can do more things than just attend request. They have a lifecycle and are able to listen to events (via postMessage). This has been handle as well as part of the process, so your middleware can handle both the ServiceWorker lifecycle/events and requests.
+`ServiceWorkers` are sold as the replacement for `AppCache`. But you can do more things than just cache network requests! They have a lifecycle and are able to listen to events (via postMessage), so you can write advanced caches, routers, and a lot more of things and have them run on the ServiceWorker.
 
-## How I can use a middleware layer?
-Simple we follow again the express syntax, so you can just use:
+This library follows the same pattern as the Express framework, allowing developers to write individual *middleware* pieces that can be layered in order to augment the default functionality.
 
+## Usage
+
+Our syntax is pretty similar to Express'. The first step is to load the basic library:
+
+```javascript
+importScripts('../path/to/ServiceWorkerWare.js');
 ```
-importScripts('../path/to/sww.js');
-importScripts('../mymiddleware.js'); //Defines a variable mymiddleware
 
+Then you can load as many additional layers as you might need. In this example we will just import one:
+
+```javascript
+ // Defines a `myMiddleware` variable
+importScripts('../myMiddleware.js');
+```
+
+Once `myMiddleware` is loaded, you can `use` it with `ServiceWorkerWare` instances:
+
+```javascript
 var worker = new self.ServiceWorkerWare();
-worker.use(mymiddleware);
+worker.use(myMiddleware);
 ```
 
-And that will make all request to be handled by your middleware.
+And that will route the requests through `myMiddleware`.
 
-Also you can specify, paths and http verbs like:
+You can also specify paths and HTTP verbs, so only requests that match the path or the verb will be handled by that middleware. For example:
 
+```javascript
+worker.post('/event/*', analyticsMiddleware);
 ```
-worker.post('/mypat/.*', mymiddleware);
-```
 
-## How I can write a middleware layer?
-As we will be handling more than just request, our middleware consist in an object that will handle the ServiceWorker events that is:
+More than one middleware can be registered with one worker. You just need to keep in mind that the `request` and `response` objects will be passed to each middleware in the same order that they were registered.
+
+
+## Writing a middleware layer
+
+Each middleware is defined by an object containing a number of callbacks that will handle the ServiceWorker events:
 
 ```
 {
@@ -46,9 +62,9 @@ As we will be handling more than just request, our middleware consist in an obje
 }
 ```
 
-Do we need to provide functionality to all the possible events? No, we just can write the methods that we want to handle. If we just want to handle requests, we just need to provide an object that handles the `onFetch` event.
+You don't need to respond to all the events--you can opt to only implement a subset of methods you care about. For example, if you just want to handle requests, you just need to implement the `onFetch` method. But in that case you might be missing out on the full `ServiceWorker` potential: you can do things such as preloading and caching resources during installation, clear the caches during activation (if the worker has been updated) or even just control the worker's behaviour by sending it a message.
 
-Also a for making it more express like, if you want to support just requests (nothing related to ServiceWorkers life cycle) you can write your middleware like this:
+Also, in order to make it even more Express-like, you can write middleware in the following way if you just want to handle requests and don't care about the ServiceWorkers life cycle:
 
 ```
 worker.get('/myResource.html', function(request, response) {
@@ -56,14 +72,6 @@ worker.get('/myResource.html', function(request, response) {
    return Promise.resolve(response);
 });
 ```
-
-## Why I would like to support more than just handling requests?
-
-Because we could be interested on doing things during ServiceWorker installation (like precaching resources), clear caches (during activation, if the ServiceWorker changed), or we just want to communicate sending messages, remember at the end of the day we have code to handle request, and could be interesting to vary the content of caches or even ServiceWorker behaviour at will with a message.
-
-## Can I use more than one middleware combined?
-
-Right, you can do it, take into account that the request/response objects will be passing through them sequentially in the order that we register our middleware objetcs.
 
 ## Handling requests
 
