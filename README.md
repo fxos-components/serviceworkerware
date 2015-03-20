@@ -1,30 +1,30 @@
 # Introduction
 
-An express like layer in top of ServiceWorkers to provide a way to easily plug functionality.
+An express like layer on top of ServiceWorkers to provide a way to easily plug functionality.
 
 ## Compatibility
 
 Currently working in:
 - [Chrome Canary](https://www.google.co.uk/chrome/browser/canary.html)
-- [Mozilla Nightly](https://blog.wanderview.com/sw-builds/)
+- [Mozilla Nightly](https://blog.wanderview.com/sw-builds/). Check that you have the `dom.serviceWorkers.enabled`, `dom.fetch.enabled` and `dom.caches.enabled` preferences set to true.
 
 # Philosophy
-Following the same pattern than express framework, we can write middleware to handle our request, pipe them and build greater things.
+Following the same pattern than [Express](http://expressjs.com/) framework, we can write middlewares to handle our requests, pipe them and build greater things.
 
-But with Servicworkers you can do more things than just attend request. They have a lifecycle and are able to listen to events (via postMessage). This has been handle as well as part of the process, so your middleware can handle both the ServiceWorker lifecycle/events and requests.
+But with ServiceWorkers you can do more things than just attend requests. They have a lifecycle and are able to listen to events (via postMessage). This has been handle as well as part of the process, so your middleware can handle both the ServiceWorker lifecycle/events and the requests.
 
-## How I can use a middleware layer?
-Simple we follow again the express syntax, so you can just use:
+## How can I use a middleware layer?
+We follow again the express syntax, so you can just use:
 
 ```
 importScripts('../path/to/sww.js');
-importScripts('../mymiddleware.js'); //Defines a variable mymiddleware
+importScripts('../mymiddleware.js'); // Defines a variable mymiddleware
 
 var worker = new self.ServiceWorkerWare();
 worker.use(mymiddleware);
 ```
 
-And that will make all request to be handled by your middleware.
+And that will make all requests to be handled by your middleware.
 
 Also you can specify, paths and http verbs like:
 
@@ -32,8 +32,8 @@ Also you can specify, paths and http verbs like:
 worker.post('/mypat/.*', mymiddleware);
 ```
 
-## How I can write a middleware layer?
-As we will be handling more than just request, our middleware consist in an object that will handle the ServiceWorker events that is:
+## How can I write a middleware layer?
+As we will be handling more than just requests, our middleware consists in an object that will handle the ServiceWorker events that is:
 
 ```
 {
@@ -46,9 +46,9 @@ As we will be handling more than just request, our middleware consist in an obje
 }
 ```
 
-Do we need to provide functionality to all the possible events? No, we just can write the methods that we want to handle. If we just want to handle requests, we just need to provide an object that handles the `onFetch` event.
+Do we need to provide functionality to all the possible events? No, we just need to write the methods that we want to handle. If we just want to handle requests, we just need to provide an object that handles the `onFetch` event.
 
-Also a for making it more express like, if you want to support just requests (nothing related to ServiceWorkers life cycle) you can write your middleware like this:
+Also to make it more express like, if you want to support just requests (nothing related to ServiceWorkers life cycle) you can write your middleware like this:
 
 ```
 worker.get('/myResource.html', function(request, response) {
@@ -57,22 +57,23 @@ worker.get('/myResource.html', function(request, response) {
 });
 ```
 
-## Why I would like to support more than just handling requests?
+## Why would I like to support more than just handling requests?
 
 Because we could be interested on doing things during ServiceWorker installation (like precaching resources), clear caches (during activation, if the ServiceWorker changed), or we just want to communicate sending messages, remember at the end of the day we have code to handle request, and could be interesting to vary the content of caches or even ServiceWorker behaviour at will with a message.
 
 ## Can I use more than one middleware combined?
 
-Right, you can do it, take into account that the request/response objects will be passing through them sequentially in the order that we register our middleware objetcs.
+Right, you can do it, take into account that the request/response objects will be passing through them sequentially in the order that we register our middleware objects.
 
 ## Handling requests
 
 Ok, what do I have to write to handle a request? As you read before either you provide an object that handles a callback for the function `onFetch` or you just write the callback itself.
 
 You will receive two parameteres, the first one is a [Request Object](https://fetch.spec.whatwg.org/#concept-request) and the second a [Response Object](https://fetch.spec.whatwg.org/#concept-response).
+
 Remember to `.clone()` them to work with them.
 
-The example below handlers urls that start with `virtual/`, the amazing thing, you don't need to have any phisical file or directory to handle that request, we will programatically create the content returned by any request that hits that format:
+The example below handles urls that start with `virtual/`, the amazing thing, you don't need to have any phisical file or directory to handle that request, we will programatically create the content returned by any request that hits that format:
 ```
 worker.get('virtual/.', function(request, response) {
   var url = request.clone().url;
@@ -120,7 +121,7 @@ gulp webserver
 
 And go to http://localhost:8000/demo/index.html
 
-You can see how the document `/demo/a.html` is precached (once the ServiceWorker is installed visiting index.html), and how the document `/demo/b.html` will be cached once visited.
+You can see in the browser console how the document `/demo/a.html` is precached (once the ServiceWorker is installed visiting index.html), and how the document `/demo/b.html` will be cached once visited.
 
 Also some other tests that you can do, visit any `http://localhost:8000/demo/virtual/<anything>` you'll receive an answer by this virtual url handler.
 
