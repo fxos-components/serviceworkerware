@@ -1,80 +1,105 @@
-# Introduction
+# ServiceWorkerWare
 
-An express like layer in top of ServiceWorkers to provide a way to easily plug functionality.
+> An [Express](http://expressjs.com/)-like layer on top of `ServiceWorkers` to provide a way to easily plug functionality.
 
-## Compatibility
+**Compatibility**
 
 Currently working in:
 - [Chrome Canary](https://www.google.co.uk/chrome/browser/canary.html)
 - [Mozilla Nightly](https://blog.wanderview.com/sw-builds/)
 
-# Philosophy
-Following the same pattern than express framework, we can write middleware to handle our request, pipe them and build greater things.
+## Philosophy
 
-But with Servicworkers you can do more things than just attend request. They have a lifecycle and are able to listen to events (via postMessage). This has been handle as well as part of the process, so your middleware can handle both the ServiceWorker lifecycle/events and requests.
+`ServiceWorkers` are sold as the replacement for `AppCache`. But you can do more things than just cache network requests! They have a lifecycle and are able to listen to events (via postMessage), so you can write advanced caches, routers, and a lot more of things and have them run on the ServiceWorker.
 
-## How I can use a middleware layer?
-Simple we follow again the express syntax, so you can just use:
+This library follows the same pattern as the Express framework, allowing developers to write individual *middleware* pieces that can be layered in order to augment the default functionality.
 
+## Usage
+
+Our syntax is pretty similar to Express'. The first step is to load the basic library:
+
+```javascript
+importScripts('../path/to/ServiceWorkerWare.js');
 ```
-importScripts('../path/to/sww.js');
-importScripts('../mymiddleware.js'); //Defines a variable mymiddleware
 
+Then you can load as many additional layers as you might need. In this example we will just import one:
+
+```javascript
+ // Defines a `myMiddleware` variable
+importScripts('../myMiddleware.js');
+```
+
+Once `myMiddleware` is loaded, you can `use` it with `ServiceWorkerWare` instances:
+
+```javascript
 var worker = new self.ServiceWorkerWare();
-worker.use(mymiddleware);
+worker.use(myMiddleware);
 ```
 
-And that will make all request to be handled by your middleware.
+And that will route the requests through `myMiddleware`.
 
-Also you can specify, paths and http verbs like:
+You can also specify paths and HTTP verbs, so only requests that match the path or the verb will be handled by that middleware. For example:
 
+```javascript
+worker.post('/event/*', analyticsMiddleware);
 ```
-worker.post('/mypat/.*', mymiddleware);
-```
 
-## How I can write a middleware layer?
-As we will be handling more than just request, our middleware consist in an object that will handle the ServiceWorker events that is:
+More than one middleware can be registered with one worker. You just need to keep in mind that the `request` and `response` objects will be passed to each middleware in the same order that they were registered.
+
+
+## Writing a middleware layer
+
+Each middleware instance is an object implementing one callback per `ServiceWorker` event type to be handled:
 
 ```
 {
     onInstall: fn1,
     onActivate: fn2,
     onFetch: fn3,
-    onMessage: fn4,
-    onBeforeevicted: fn5,
-    onEvicted: fn6
+    onMessage: fn4
 }
 ```
 
-Do we need to provide functionality to all the possible events? No, we just can write the methods that we want to handle. If we just want to handle requests, we just need to provide an object that handles the `onFetch` event.
+You don't need to respond to all the events--you can opt to only implement a subset of methods you care about. For example, if you only want to handle requests, you just need to implement the `onFetch` method. But in that case you might be missing out on the full `ServiceWorker` potential: you can do things such as preloading and caching resources during installation, clear the caches during activation (if the worker has been updated) or even just control the worker's behaviour by sending it a message.
 
-Also a for making it more express like, if you want to support just requests (nothing related to ServiceWorkers life cycle) you can write your middleware like this:
+Also, in order to make it even more Express-like, you can write middleware in the following way if you just want to handle fetch events and don't care about the ServiceWorkers life cycle:
 
+```javascript
+var worker = new self.ServiceWorkerWare();
+worker.get('/hello.html', function(request, response) {
+  return Promise.resolve(new Response('Hello world!), { headers: {'Content-Type': 'text/html'} });
+}
+worker.init();
 ```
-worker.get('/myResource.html', function(request, response) {
-   // Your code goes here
-   return Promise.resolve(response);
-});
-```
 
-## Why I would like to support more than just handling requests?
+## Events
 
-Because we could be interested on doing things during ServiceWorker installation (like precaching resources), clear caches (during activation, if the ServiceWorker changed), or we just want to communicate sending messages, remember at the end of the day we have code to handle request, and could be interesting to vary the content of caches or even ServiceWorker behaviour at will with a message.
+### `onInstall`
 
-## Can I use more than one middleware combined?
+It will be called during ServiceWorker installation. This happens just once.
 
-Right, you can do it, take into account that the request/response objects will be passing through them sequentially in the order that we register our middleware objetcs.
+### `onActivate`
 
-## Handling requests
+It will be called just after `onInstall`, or each time that you update your ServiceWorker. It's useful to update caches or any part of your application logic.
 
-Ok, what do I have to write to handle a request? As you read before either you provide an object that handles a callback for the function `onFetch` or you just write the callback itself.
+### `onFetch(request, response)` returns Promise
 
-You will receive two parameteres, the first one is a [Request Object](https://fetch.spec.whatwg.org/#concept-request) and the second a [Response Object](https://fetch.spec.whatwg.org/#concept-response).
-Remember to `.clone()` them to work with them.
+Will be called whenever the browser requests a resource when the worker has been installed.
 
-The example below handlers urls that start with `virtual/`, the amazing thing, you don't need to have any phisical file or directory to handle that request, we will programatically create the content returned by any request that hits that format:
+* `request`: it's a standard [Request Object](https://fetch.spec.whatwg.org/#concept-request)
+* `response`: it's a standard [Response Object](https://fetch.spec.whatwg.org/#concept-response)
+
+You need to `.clone()` the `request` before using it as some fields are one use only.
+
+After the whole process of iterating over the different middleware you need to return a `Response` object. Each middleware can use the previous `response` object to perform operations over the content, headers or anything.
+
+The `request` object provides details that define which resource was requested. This callback might (or not) use those details when building the `Response` object that it must return.
+
+The following example will handle URLs that start with `virtual/` with the simplest version of `onFetch`: a callback! None of the requested resources need to physically exist, they will be programmatically created by the handler on demand:
+
 ```
 worker.get('virtual/.', function(request, response) {
+
   var url = request.clone().url;
 
   var content = '<html><body>'
@@ -90,43 +115,96 @@ worker.get('virtual/.', function(request, response) {
 });
 ```
 
-The output for any request that hits this url will be the original address of the url and a random number, with the headers that we specified in the response object.
+The output for any request that hits this URL will be the original address of the URL, and a randomly generated number. Note how we can even specify the headers for our response!
 
-One important point is the fact that when you write a handler for using in your request, the function handling those requests *must return a promise*.
+Remember that the handler *must always return a Promise*.
 
-## Can I see some examples of middleware?
+### `onMessage(?)`
 
-Right we added 2 simple middlewares to this package, one for precaching static content and a simple offline cache handler. They are available by default when you import this library.
+We will receive this event if an actor (window, iframe, another worker or shared worker) performs a `postMessage` on the ServiceWorker to communicate with it.
 
-* StaticCacher: this will help you to specify any set of files to be cached during the ServiceWorker installation:
+<!--
+
+NOTE: These two events are commented out until the discussions are clarified
+
+### `onBeforeEvicted(?)`
+
+This is still under heavy discussion: it's a custom event that the User Agent sends to the worker to let it know that is going to be evicted.
+
+### `onEvicted(?)`
+
+Also under heavy discussion.
+
+-->
+
+## Middleware examples
+
+This package already incorporates two simple middlewares. They are available by default when you import it:
+
+TODO: I would suggest refactoring them away from this package
+
+### `StaticCacher`
+
+This will let you preload and cache static content during the `ServiceWorker` installation.
+
+TODO: where does `self` come from? in which context is this being executed?
+
+For example:
+
 ```
 worker.use(new self.StaticCacher(['a.html', 'b.html' ...]));
 ```
-It saves the content in the default cache.
 
-* SimpleOfflineCache: will serve the contents of the default cache. Right now if it cannot find an element in the cache will perform a fetch and will save it to the cache.
-(TODO: this should be configurable ;P)
+Upon installation, this worker will load `a.html` and `b.html` and store their content in the default cache.
 
-### More examples of middleware
-* [ZipCacher](https://github.com/arcturus/zipcacher) enables you to specify a zip file to cache your resources from.
+### `SimpleOfflineCache`
 
-# Demo
+This will serve contents stored in the default cache. If it cannot find a resource in the cache, it will perform a fetch and save it to the cache.
 
-Please run:
+### [<tt>ZipCacher</tt>](https://github.com/arcturus/zipcacher)
+
+This is not built-in with this library. It enables you to specify a ZIP file to cache your resources from.
+
+```javascript
+importScripts('./sww.js');
+importScripts('./zipcacher.js');
+
+var worker = new self.ServiceWorkerWare();
+
+worker.use(new ZipCacher('http://localhost:8000/demo/resources.zip'));
+worker.use(new self.SimpleOfflineCache());
+worker.init();
+```
+
+## Running the demo
+
+Clone the repository, and then cd to the directory and run:
+
 ```
 npm install
 gulp webserver
 ```
 
-And go to http://localhost:8000/demo/index.html
+TODO: use npm scripts to run gulp, avoid global gulp installation
 
-You can see how the document `/demo/a.html` is precached (once the ServiceWorker is installed visiting index.html), and how the document `/demo/b.html` will be cached once visited.
+And go to `http://localhost:8000/demo/index.html` using any of the browsers where `ServiceWorker`s are supported.
 
-Also some other tests that you can do, visit any `http://localhost:8000/demo/virtual/<anything>` you'll receive an answer by this virtual url handler.
+When you visit `index.html` the ServiceWorker will be installed and `/demo/a.html` will be preloaded and cached. In contrast, `/demo/b.html` will be cached only once it is visited (i.e. only once the user navigates to it).
 
-# Thanks
-A lot of this code has been written with the inspiration from different projects:
+For an example of more advanced programmatic functionality, you can also navigate to any URL of the form `http://localhost:8000/demo/virtual/<anything>` (where `anything` is any content you want to enter) and you'll receive an answer by the installed virtual URL handler middleware.
+
+## Thanks!
+
+A lot of this code has been inspired by different projects:
+
 - [Firefox OS V3 Architecture] (https://github.com/fxos/contacts)
 - [Shed] (https://github.com/wibblymat/shed)
-- [sw-preache](https://github.com/jeffposnick/sw-precache)
+- [sw-precache](https://github.com/jeffposnick/sw-precache)
 - [offliner](https://github.com/lodr/offliner)
+
+## License
+
+Mozilla Public License 2.0
+
+http://mozilla.org/MPL/2.0/
+
