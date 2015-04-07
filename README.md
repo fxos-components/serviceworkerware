@@ -1,6 +1,6 @@
 # ServiceWorkerWare
 
-> An [Express](http://expressjs.com/)-like layer in top of `ServiceWorkers` to provide a way to easily plug functionality.
+> An [Express](http://expressjs.com/)-like layer on top of `ServiceWorkers` to provide a way to easily plug functionality.
 
 **Compatibility**
 
