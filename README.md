@@ -56,9 +56,7 @@ Each middleware instance is an object implementing one callback per `ServiceWork
     onInstall: fn1,
     onActivate: fn2,
     onFetch: fn3,
-    onMessage: fn4,
-    onBeforeevicted: fn5,
-    onEvicted: fn6
+    onMessage: fn4
 }
 ```
 
@@ -66,17 +64,23 @@ You don't need to respond to all the events--you can opt to only implement a sub
 
 Also, in order to make it even more Express-like, you can write middleware in the following way if you just want to handle fetch events and don't care about the ServiceWorkers life cycle:
 
-```
-worker.get('/myResource.html', function(request, response) {
-   // Your code goes here
-   return Promise.resolve(response);
-});
+```javascript
+var worker = new self.ServiceWorkerWare();
+worker.get('/hello.html', function(request, response) {
+  return Promise.resolve(new Response('Hello world!), { headers: {'Content-Type': 'text/html'} });
+}
+worker.init();
 ```
 
-TODO: a working code example that can be executed to see how 'Your code' would actually look like
+## Events
 
-### onInstall(?) TODO
-### onActivate(?) TODO
+### `onInstall`
+
+It will be called during ServiceWorker installation. This happens just once.
+
+### `onActivate`
+
+It will be called just after `onInstall`, or each time that you update your ServiceWorker. It's useful to update caches or any part of your application logic.
 
 ### `onFetch(request, response)` returns Promise
 
@@ -87,7 +91,7 @@ Will be called whenever the browser requests a resource when the worker has been
 
 You need to `.clone()` the `request` before using it as some fields are one use only.
 
-TODO: What is the use of the `response` parameter?
+After the whole process of iterating over the different middleware you need to return a `Response` object. Each middleware can use the previous `response` object to perform operations over the content, headers or anything.
 
 The `request` object provides details that define which resource was requested. This callback might (or not) use those details when building the `Response` object that it must return.
 
@@ -115,10 +119,23 @@ The output for any request that hits this URL will be the original address of th
 
 Remember that the handler *must always return a Promise*.
 
-### onMessage(?) TODO
-### onBeforeEvicted(?) TODO
-### onEvicted(?) TODO
+### `onMessage(?)`
 
+We will receive this event if an actor (window, iframe, another worker or shared worker) performs a `postMessage` on the ServiceWorker to communicate with it.
+
+<!--
+
+NOTE: These two events are commented out until the discussions are clarified
+
+### `onBeforeEvicted(?)`
+
+This is still under heavy discussion: it's a custom event that the User Agent sends to the worker to let it know that is going to be evicted.
+
+### `onEvicted(?)`
+
+Also under heavy discussion.
+
+-->
 
 ## Middleware examples
 
@@ -144,13 +161,20 @@ Upon installation, this worker will load `a.html` and `b.html` and store their c
 
 This will serve contents stored in the default cache. If it cannot find a resource in the cache, it will perform a fetch and save it to the cache.
 
-TODO: this should be configurable ;P // TODO this comment should be in the code for the middleware
-
 ### [<tt>ZipCacher</tt>](https://github.com/arcturus/zipcacher)
 
 This is not built-in with this library. It enables you to specify a ZIP file to cache your resources from.
 
-TODO: example
+```javascript
+importScripts('./sww.js');
+importScripts('./zipcacher.js');
+
+var worker = new self.ServiceWorkerWare();
+
+worker.use(new ZipCacher('http://localhost:8000/demo/resources.zip'));
+worker.use(new self.SimpleOfflineCache());
+worker.init();
+```
 
 ## Running the demo
 
@@ -180,4 +204,7 @@ A lot of this code has been inspired by different projects:
 
 ## License
 
-??? TODO ???
+Mozilla Public License 2.0
+
+http://mozilla.org/MPL/2.0/
+
