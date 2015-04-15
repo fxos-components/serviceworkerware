@@ -52,7 +52,8 @@ Router.prototype.proxyMethods = function r_proxyPrototype(obj) {
       if (!(typeof mw.onFetch !== 'function' || typeof mw !== 'function')) {
         throw new Error('This middleware cannot handle fetch request');
       }
-      var handler = typeof mw.onFetch !== 'undefined' ? mw.onFetch.bind(mw) : mw;
+      var handler = typeof mw.onFetch !== 'undefined' ?
+        mw.onFetch.bind(mw) : mw;
       self.add(method, path, handler);
     };
   });
@@ -87,7 +88,8 @@ module.exports = Router;
 
 var cacheHelper = require('sw-cache-helper');
 
-var debug = 0 ? console.log.bind(console, '[SimpleOfflineCache]') : function(){};
+var debug = 0 ? console.log.bind(console, '[SimpleOfflineCache]') :
+ function(){};
 
 function SimpleOfflineCache(cacheName) {
   this.cacheName = cacheName || cacheHelper.defaultCacheName;
@@ -210,7 +212,8 @@ ServiceWorkerWare.prototype.onFetch = function sww_onFetch(evt) {
   }
   evt.respondWith(steps.reduce(function(prevTaskPromise, currentTask) {
     debug('Applying middleware %s', currentTask.name);
-    return prevTaskPromise.then(currentTask.bind(currentTask, evt.request.clone()));
+    return prevTaskPromise.then(currentTask.bind(currentTask,
+       evt.request.clone()));
   }, Promise.resolve(null)));
 };
 
@@ -301,10 +304,12 @@ ServiceWorkerWare.prototype.forwardEvent = function sww_forwardEvent(evt) {
 /**
  * Broadcast a message to all worker clients
  * @param msg Object the message
- * @param channel String (Used just in Firefox Nightly) using broadcastchannel api to deliver
- * the message, this parameter can be undefined as we listen for a channel undefined in the client.
+ * @param channel String (Used just in Firefox Nightly) using broadcastchannel
+ * api to deliver the message, this parameter can be undefined as we listen for
+ * a channel undefined in the client.
  */
-ServiceWorkerWare.prototype.broadcastMessage = function sww_broadcastMessage(msg, channel) {
+ServiceWorkerWare.prototype.broadcastMessage = function sww_broadcastMessage(
+  msg, channel) {
   // XXX: Until https://bugzilla.mozilla.org/show_bug.cgi?id=1130685 is fixed
   // we can use BroadcastChannel API in Firefox Nightly
   if (typeof BroadcastChannel === 'function') {
@@ -313,8 +318,8 @@ ServiceWorkerWare.prototype.broadcastMessage = function sww_broadcastMessage(msg
     bc.close();
     return Promise.resolve();
   } else {
-    // This is suppose to be the way of broadcasting a message, unfortunately it's not working
-    // yet in Chrome Canary
+    // This is suppose to be the way of broadcasting a message, unfortunately
+    // it's not working yet in Chrome Canary
     return clients.matchAll().then(function(consumers) {
       consumers.forEach(function(client) {
         client.postMessage(msg);
@@ -328,7 +333,6 @@ module.exports = {
   StaticCacher: StaticCacher,
   SimpleOfflineCache: SimpleOfflineCache
 };
-
 
 },{"./router.js":2,"./simpleofflinecache.js":3,"./staticcacher.js":4}],6:[function(require,module,exports){
 /* global caches, fetch, Promise, Request, module*/
