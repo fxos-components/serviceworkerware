@@ -55,19 +55,17 @@ module.exports = function(config) {
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: ['Chrome', 'NightlySW'],
+    browsers: ['ChromeCanary', 'NightlySW'],
 
     customLaunchers: {
       'NightlySW': {
-        base: 'Firefox',
-        flags: ['--safe-mode'],
+        base: 'FirefoxNightly',
         prefs: {
           'devtools.serviceWorkers.testing.enabled': true,
           'dom.serviceWorkers.enabled': true,
           'browser.displayedE10SNotice': 4,
           // Disable electrolisis (e10s)
-          'browser.tabs.remote': false,
-          'browser.tabs.remote.autostart': false
+          'browser.tabs.remote.autostart.2': false
         }
       }
     },
