@@ -193,6 +193,21 @@ When you visit `index.html` the ServiceWorker will be installed and `/demo/a.htm
 
 For an example of more advanced programmatic functionality, you can also navigate to any URL of the form `http://localhost:8000/demo/virtual/<anything>` (where `anything` is any content you want to enter) and you'll receive an answer by the installed virtual URL handler middleware.
 
+# And what about testing?
+We are working on an you can see the specs under `lib/spec` folder.
+
+Please, launch:
+```bash
+$ gulp tests
+```
+
+Once tests are complete, [Karma](http://karma-runner.github.io/0.12/index.html), the testing framework, keeps monitoring your files to relaunch the tests when something is modified. Do not try to close the browsers. If you want to stop testing, kill the Karma process.
+
+This should be straightforward for Windows and iOS. As usual, if your are on Linux or you're having problems with binary routes, try setting some environment variables:
+```bash
+$ FIREFOX_NIGHTLY_BIN=/path/to/nightly-bin CHROME_CANARY_BIN=/path/to/canary-bin gulp tests
+```
+
 ## Thanks!
 
 A lot of this code has been inspired by different projects:

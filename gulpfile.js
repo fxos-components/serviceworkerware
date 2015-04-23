@@ -8,10 +8,18 @@ var sourcemaps = require('gulp-sourcemaps');
 var webserver = require('gulp-webserver');
 var jshint = require('gulp-jshint');
 var watch = require('gulp-watch');
+var karma = require('karma').server;
 
 var getBundleName = function () {
   return 'sww';
 };
+
+gulp.task('tests', function () {
+  karma.start({
+    configFile: __dirname + '/testing/karma-sw.conf.js',
+    singleRun: false
+  });
+});
 
 gulp.task('javascript', function() {
 
