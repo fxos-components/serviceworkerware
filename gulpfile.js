@@ -16,13 +16,6 @@ var getBundleName = function () {
 
 gulp.task('tests', function () {
   karma.start({
-    configFile: __dirname + '/testing/karma.conf.js',
-    singleRun: true
-  });
-});
-
-gulp.task('sw-tests', function () {
-  karma.start({
     configFile: __dirname + '/testing/karma-sw.conf.js',
     singleRun: false
   });
