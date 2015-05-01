@@ -25,10 +25,7 @@ Router.prototype.methods = ['get', 'post', 'put', 'delete', 'head',
  * @param handler (Function) payload to be executed if url matches.
  */
 Router.prototype.add = function r_add(method, path, handler) {
-  method = method.toLowerCase();
-  if (this.methods.indexOf(method) === -1) {
-    throw new Error('Method %s is not supported', method);
-  }
+  method = this._sanitizeMethod(method);
   this.stack.push({
     method: method,
     path: new RegExp(path),
@@ -49,7 +46,7 @@ Router.prototype.proxyMethods = function r_proxyPrototype(obj) {
   var self = this;
   this.methods.forEach(function(method) {
     obj[method] = function(path, mw) {
-      if (!(typeof mw.onFetch !== 'function' || typeof mw !== 'function')) {
+      if (typeof mw.onFetch !== 'function' && typeof mw !== 'function') {
         throw new Error('This middleware cannot handle fetch request');
       }
       var handler = typeof mw.onFetch !== 'undefined' ?
@@ -64,7 +61,7 @@ Router.prototype.proxyMethods = function r_proxyPrototype(obj) {
  * the stack.
  */
 Router.prototype.match = function r_match(method, url) {
-  method = method.toLowerCase();
+  method = this._sanitizeMethod(method);
   var matches = [];
 
   var self = this;
@@ -81,6 +78,14 @@ Router.prototype.match = function r_match(method, url) {
   return matches;
 };
 
+Router.prototype._sanitizeMethod = function(method) {
+  var sanitizedMethod = method.toLowerCase().trim();
+  if (this.methods.indexOf(sanitizedMethod) === -1) {
+    throw new Error('Method "' + method + '" is not supported');
+  }
+  return sanitizedMethod;
+};
+
 module.exports = Router;
 
 },{}],3:[function(require,module,exports){
@@ -91,9 +96,32 @@ var cacheHelper = require('sw-cache-helper');
 var debug = 0 ? console.log.bind(console, '[SimpleOfflineCache]') :
  function(){};
 
-function SimpleOfflineCache(cacheName) {
+// Default Match options, not exposed.
+var DEFAULT_MATCH_OPTIONS = {
+  ignoreSearch: false,
+  ignoreMethod: false,
+  ignoreVary: false
+};
+// List of different policies
+var MISS_POLICIES = [
+  'fetchAndCache'
+];
+
+
+/**
+ * Constructor for the middleware that serves the content of a
+ * cache specified by it's name.
+ * @param {string} cacheName Name of the cache that will be serving the content
+ * @param {object} [options] Object use to setup the cache matching alternatives
+ * @param {string} [missPolicy] Name of the policy to follow if a request miss
+ *                 when hitting the cache.
+ */
+function SimpleOfflineCache(cacheName, options, missPolicy) {
   this.cacheName = cacheName || cacheHelper.defaultCacheName;
   this.cache = null;
+  this.options = options || DEFAULT_MATCH_OPTIONS;
+  this.missPolicy = MISS_POLICIES.indexOf(missPolicy) !== -1 ?
+    missPolicy : 'fetchAndCache';
 }
 
 SimpleOfflineCache.prototype.onFetch = function soc_onFetch(request, response) {
@@ -104,14 +132,19 @@ SimpleOfflineCache.prototype.onFetch = function soc_onFetch(request, response) {
   }
 
   var clone = request.clone();
+  var self = this;
   debug('Handing fetch event: %s', clone.url);
   return this.ensureCache().then(function(cache) {
-    return cache.match(request.clone()).then(function(res) {
+    return cache.match(request.clone(), self.options).then(function(res) {
       if (res) {
         return res;
       }
 
-      return cacheHelper.fetchAndCache(request, cache);
+      // So far we just support one policy
+      switch(self.missPolicy) {
+        case 'fetchAndCache':
+          return cacheHelper.fetchAndCache(request, cache);
+      }
     });
   });
 };
