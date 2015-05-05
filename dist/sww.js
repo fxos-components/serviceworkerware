@@ -120,8 +120,12 @@ function SimpleOfflineCache(cacheName, options, missPolicy) {
   this.cacheName = cacheName || cacheHelper.defaultCacheName;
   this.cache = null;
   this.options = options || DEFAULT_MATCH_OPTIONS;
-  this.missPolicy = MISS_POLICIES.indexOf(missPolicy) !== -1 ?
-    missPolicy : 'fetchAndCache';
+  if (MISS_POLICIES.indexOf(missPolicy) === -1) {
+    console.warn('Policy ' + missPolicy + ' not supported');
+    this.missPolicy = 'fetchAndCache';
+  } else {
+    this.missPolicy = MISS_POLICIES.indexOf(missPolicy);
+  }
 }
 
 SimpleOfflineCache.prototype.onFetch = function soc_onFetch(request, response) {
