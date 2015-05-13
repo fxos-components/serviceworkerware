@@ -102,9 +102,10 @@ var DEFAULT_MATCH_OPTIONS = {
   ignoreMethod: false,
   ignoreVary: false
 };
+var DEFAULT_MISS_POLICY = 'fetchAndChace';
 // List of different policies
 var MISS_POLICIES = [
-  'fetchAndCache'
+  DEFAULT_MISS_POLICY
 ];
 
 
@@ -118,13 +119,11 @@ var MISS_POLICIES = [
  */
 function SimpleOfflineCache(cacheName, options, missPolicy) {
   this.cacheName = cacheName || cacheHelper.defaultCacheName;
-  this.cache = null;
   this.options = options || DEFAULT_MATCH_OPTIONS;
-  if (MISS_POLICIES.indexOf(missPolicy) === -1) {
+  this.missPolicy = missPolicy || DEFAULT_MISS_POLICY;
+  if (MISS_POLICIES.indexOf(this.missPolicy) === -1) {
     console.warn('Policy ' + missPolicy + ' not supported');
-    this.missPolicy = 'fetchAndCache';
-  } else {
-    this.missPolicy = MISS_POLICIES.indexOf(missPolicy);
+    this.missPolicy = DEFAULT_MISS_POLICY;
   }
 }
 
@@ -146,7 +145,7 @@ SimpleOfflineCache.prototype.onFetch = function soc_onFetch(request, response) {
 
       // So far we just support one policy
       switch(self.missPolicy) {
-        case 'fetchAndCache':
+        case DEFAULT_MISS_POLICY:
           return cacheHelper.fetchAndCache(request, cache);
       }
     });
@@ -154,12 +153,7 @@ SimpleOfflineCache.prototype.onFetch = function soc_onFetch(request, response) {
 };
 
 SimpleOfflineCache.prototype.ensureCache = function soc_ensureCache() {
-  if (this.cache) {
-    return Promise.resolve(this.cache);
-  }
-  var self = this;
   return cacheHelper.getCache(this.cacheName).then(function(cache) {
-    self.cache = cache;
     return cache;
   });
 };
