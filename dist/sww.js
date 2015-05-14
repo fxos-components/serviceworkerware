@@ -135,16 +135,16 @@ SimpleOfflineCache.prototype.onFetch = function soc_onFetch(request, response) {
   }
 
   var clone = request.clone();
-  var self = this;
+  var _this = this;
   debug('Handing fetch event: %s', clone.url);
   return this.ensureCache().then(function(cache) {
-    return cache.match(request.clone(), self.options).then(function(res) {
+    return cache.match(request.clone(), _this.options).then(function(res) {
       if (res) {
         return res;
       }
 
       // So far we just support one policy
-      switch(self.missPolicy) {
+      switch(_this.missPolicy) {
         case DEFAULT_MISS_POLICY:
           return cacheHelper.fetchAndCache(request, cache);
       }
