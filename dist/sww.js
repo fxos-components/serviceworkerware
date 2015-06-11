@@ -262,13 +262,16 @@ ServiceWorkerWare.prototype.onFetch = function sww_onFetch(evt) {
 };
 
 /**
- * Wraps the first call for executing the middleware pipeline.
+ * Run the middleware pipeline and inform if errors preventing respondWith()
+ * to swallow the error.
  *
  * @param {Array} the middleware pipeline
  * @param {Request} the request for the middleware
  */
 ServiceWorkerWare.prototype.executeMiddleware = function (middleware, request) {
-  return this.runMiddleware(middleware, 0, request, null);
+  var response = this.runMiddleware(middleware, 0, request, null);
+  response.catch(function (error) { console.error(error); });
+  return response;
 };
 
 /**
