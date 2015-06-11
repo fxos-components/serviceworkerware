@@ -8,9 +8,8 @@
     "Francisco Jordano <francisco@jordano.es>"
   ],
   "ignore": [
-    "**/.*",
-    "node_modules",
-    "demo"
+    "*",
+    "!dist/sww.js"
   ],
   "description": "An Express-like layer on top of ServiceWorkers to provide a way to easily plug functionality.",
   "keywords": [
