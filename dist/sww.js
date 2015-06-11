@@ -89,6 +89,7 @@ Router.prototype._sanitizeMethod = function(method) {
 module.exports = Router;
 
 },{}],3:[function(require,module,exports){
+/* global Promise */
 'use strict';
 
 var cacheHelper = require('sw-cache-helper');
@@ -182,7 +183,7 @@ StaticCacher.prototype.onInstall = function sc_onInstall() {
 module.exports = StaticCacher;
 
 },{"sw-cache-helper":6}],5:[function(require,module,exports){
-/* global fetch, BroadcastChannel, clients */
+/* global fetch, BroadcastChannel, clients, Promise, Request, Response */
 'use strict';
 
 var debug = 1 ? console.log.bind(console, '[ServiceWorkerWare]') : function(){};
@@ -190,7 +191,12 @@ var StaticCacher = require('./staticcacher.js');
 var SimpleOfflineCache = require('./simpleofflinecache.js');
 var Router = require('./router.js');
 
-function DEFAULT_FALLBACK_MW(request, response) {
+var ERROR = 'error';
+var CONTINUE = 'continue';
+var TERMINATE = 'terminate';
+var TERMINATION_TOKEN = {};
+
+function DEFAULT_FALLBACK_MW(request) {
   return fetch(request);
 }
 
@@ -252,11 +258,144 @@ ServiceWorkerWare.prototype.onFetch = function sww_onFetch(evt) {
     return this.fallbackMw(req, res);
   }).bind(this));
 
-  evt.respondWith(steps.reduce(function(prevTaskPromise, currentTask) {
-    debug('Applying middleware ' + currentTask.name);
-    return prevTaskPromise.then(currentTask.bind(currentTask,
-       evt.request.clone()));
-  }, Promise.resolve(null)));
+  evt.respondWith(this.executeMiddleware(steps, evt.request));
+};
+
+/**
+ * Wraps the first call for executing the middleware pipeline.
+ *
+ * @param {Array} the middleware pipeline
+ * @param {Request} the request for the middleware
+ */
+ServiceWorkerWare.prototype.executeMiddleware = function (middleware, request) {
+  return this.runMiddleware(middleware, 0, request, null);
+};
+
+/**
+ * Pass through the middleware pipeline, executing each middleware in a
+ * sequence according to the result from each execution.
+ *
+ * Each middleware will be passed with the request and response from the
+ * previous one in the pipeline. The response from the latest one will be
+ * used to answer from the service worker. The middleware will receive,
+ * as the last parameter, a function to stop the pipeline and answer
+ * immediately.
+ *
+ * A middleware run can lead to continuing execution, interruption of the
+ * pipeline or error. The next action to be performed is calculated according
+ * the conditions of the middleware execution and its return value.
+ * See normalizeMwAnswer() for details.
+ *
+ * @param {Array} middleware pipeline.
+ * @param {Number} middleware to execute in the pipeline.
+ * @param {Request} the request for the middleware.
+ * @param {Response} the response for the middleware.
+ */
+ServiceWorkerWare.prototype.runMiddleware =
+function (middleware, current, request, response) {
+  if (current >= middleware.length) {
+    return Promise.resolve(response);
+  }
+
+  var mw = middleware[current];
+  var endWith = ServiceWorkerWare.endWith;
+  var answer = mw(request, response, endWith);
+  var normalized =
+    ServiceWorkerWare.normalizeMwAnswer(answer, request, response);
+
+  return normalized.then(function (info) {
+    switch (info.nextAction) {
+      case TERMINATE:
+        return Promise.resolve(info.response);
+
+      case ERROR:
+        return Promise.reject(info.error);
+
+      case CONTINUE:
+        var next = current + 1;
+        var request = info.request;
+        var response = info.response;
+        return this.runMiddleware(middleware, next, request, response);
+    }
+  }.bind(this));
+};
+
+/**
+ * A function to force interruption of the pipeline.
+ *
+ * @param {Response} the response object that will be used to answer from the
+ * service worker.
+ */
+ServiceWorkerWare.endWith = function (response) {
+  if (arguments.length === 0) {
+    throw new Error('Type error: endWith() must be called with a value.');
+  }
+  return [TERMINATION_TOKEN, response];
+};
+
+/**
+ * A middleware is supposed to return a promise resolving in a pair of request
+ * and response for the next one or to indicate that it wants to answer
+ * immediately.
+ *
+ * To allow flexibility, the middleware is allowed to return other values
+ * rather than the promise. For instance, it is allowed to return only a
+ * request meaning the next middleware will be passed that request but the
+ * previous response untouched.
+ *
+ * The function takes into account all the scenarios to compute the request
+ * and response for the next middleware or the intention to terminate
+ * immediately.
+ *
+ * @param {Any} non normalized answer from the middleware.
+ * @param {Request} request passed as parameter to the middleware.
+ * @param {Response} response passed as parameter to the middleware.
+ */
+ServiceWorkerWare.normalizeMwAnswer = function (answer, request, response) {
+  if (!answer || !answer.then) {
+    answer = Promise.resolve(answer);
+  }
+  return answer.then(function (value) {
+    var nextAction = CONTINUE;
+    var error, nextRequest, nextResponse;
+    var isArray = Array.isArray(value);
+
+    if (isArray && value[0] === TERMINATION_TOKEN) {
+      nextAction = TERMINATE;
+      nextRequest = request;
+      nextResponse = value[1] || response;
+    }
+    else if (value === null) {
+      nextRequest = request;
+      nextResponse = null;
+    }
+    else if (isArray && value.length === 2) {
+      nextRequest = value[0];
+      nextResponse = value[1];
+    }
+    else if (value instanceof Response) {
+      nextRequest = request;
+      nextResponse = value;
+    }
+    else if (value instanceof Request) {
+      nextRequest = value;
+      nextResponse = response;
+    }
+    else {
+      var msg = 'Type error: middleware must return a Response, ' +
+                'a Request, a pair [Response, Request] or a Promise ' +
+                'resolving to one of these types.';
+      nextAction = ERROR;
+      error = new Error(msg);
+    }
+
+    return {
+      nextAction: nextAction,
+      request: nextRequest,
+      response: nextResponse,
+      error: error
+    };
+  });
 };
 
 /**
@@ -367,6 +506,30 @@ ServiceWorkerWare.prototype.broadcastMessage = function sww_broadcastMessage(
         client.postMessage(msg);
       });
     });
+  }
+};
+
+ServiceWorkerWare.decorators = {
+
+  ifNoResponse: function (mw) {
+    return function (req, res, endWith) {
+      if (res) { return [req, res]; }
+      return mw(req, res, endWith);
+    };
+  },
+
+  stopAfter: function (mw) {
+    return function (req, res, endWith) {
+      var answer = mw(req, res, endWith);
+      var normalized = ServiceWorkerWare.normalizeMwAnswer(answer, req, res);
+
+      return normalized.then(function (info) {
+        if (info.nextAction === 'error') {
+          return Promise.reject(info.error);
+        }
+        return endWith(info.response);
+      });
+    };
   }
 };
 
