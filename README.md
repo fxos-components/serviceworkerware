@@ -72,6 +72,39 @@ worker.get('/hello.html', function(request, response) {
 worker.init();
 ```
 
+## Advanced middleware pipelining
+
+Middlewares are tied to one or several URLs and executed in the same order you register them. The first middleware is passed with the Request from the client code and `null` as response. Next middlewares receive their parameters from the previous ones according to:
+
+  * If returning a pair `[Request, Response]`, these will be the values for next request and response parameters.
+  * If returning only a `Request`, this will be the next request and the response remains the same as for the previous middleware.
+  * The same happens if returning only a `Response`.
+  * For backward-compatibility, returning `null` will set the next Response to `null`.
+  * Returning any other thing from a middleware will fail and cause a rejection. 
+
+Finally, the answer from the service worker will be the response returned by the last middleware.
+
+If you need to perform asynchronous operations, instead of returning one of the previous values, you can return a Promise resolving in one of the previous values.
+
+### Interrupting the middleware pipeline
+
+If you want to respond from a middleware immediately and prevent other middlewares to be executed, return the response you want to use wrapped inside the `endWith()` callback. The callback is received as the third parameter of a middleware and expects a mandatory parameter to be the final response.
+
+```javascript
+var worker = new self.ServiceWorkerWare();
+worker.use(function (req, res, endWith) {
+  return endWith(
+    new Response('Hello world!, { headers: {'Content-Type': 'text/html'} });
+  );
+});
+worker.use(function (req, res, endWith) {
+  console.log('Hello!'); // this will be never printed
+});
+worker.init();
+```
+
+Remember you can use promises resolving to the wrapped response for your asynchronous stuff.
+
 ## Events
 
 ### `onInstall`
