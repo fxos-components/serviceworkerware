@@ -4,7 +4,7 @@
   "description": "ServiceWorker framework to deal with common task managing request, allowing easy extensibility",
   "main": "dist/sww.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "gulp tests",
     "start": "http-server ."
   },
   "author": "Francisco Jordano <francisco@jordano.es>",
