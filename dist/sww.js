@@ -25,10 +25,16 @@ Router.prototype.methods = ['get', 'post', 'put', 'delete', 'head',
  * @param handler (Function) payload to be executed if url matches.
  */
 Router.prototype.add = function r_add(method, path, handler) {
+  var pathRegex;
+
   method = this._sanitizeMethod(method);
+
+  // Parse simle string path into regular expression for path matching
+  pathRegex = this._parseSimplePath(path);
+
   this.stack.push({
     method: method,
-    path: new RegExp(path),
+    path: pathRegex,
     handler: handler
   });
 };
@@ -85,6 +91,42 @@ Router.prototype._sanitizeMethod = function(method) {
   }
   return sanitizedMethod;
 };
+
+/*
+  Simple path-to-regex translation based on the Express "string-based path" syntax
+*/
+Router.prototype._parseSimplePath = function(path) {
+  // Check for named placeholder crowding
+  if (/\:[a-zA-Z0-9]+\:[a-zA-Z0-9]+/g.test(path)) {
+    throw new Error('Invalid usage of named placeholders');
+  }
+
+  // Check for mixed placeholder crowdings
+  if (/(\*\:[a-zA-Z0-9]+)|(\:[a-zA-Z0-9]+\:[a-zA-Z0-9]+)|(\:[a-zA-Z0-9]+\*)/g.test(path.replace(/\\\*/g,''))) {
+    throw new Error('Invalid usage of named placeholders');
+  }
+
+  // Try parsing the string and converting special characters into regex
+  try {
+    // Parsing anonymous placeholders with simple backslash-escapes
+    path = path.replace(/(.|^)\*/g, function(m,escape) {
+      return escape==='\\' ? '\\*' : (escape+'(.*?)');
+    });
+
+    // Parsing named placeholders with backslash-escapes
+    path = path.replace(/(.|^)\:([a-zA-Z0-9]+)/g, function(m,escape,tag) {
+      return escape==='\\' ? (':'+tag) : (escape+'(.+?)');
+    });
+
+    return new RegExp(path + '$');
+  }
+
+  // Failed to parse final path as a RegExp
+  catch (ex) {
+    throw new Error('Invalid path specified');
+  }
+};
+
 
 module.exports = Router;
 
@@ -164,8 +206,6 @@ module.exports = SimpleOfflineCache;
 },{"sw-cache-helper":6}],4:[function(require,module,exports){
 'use strict';
 
-var CacheHelper = require('sw-cache-helper');
-
 function StaticCacher(fileList) {
   if (!Array.isArray(fileList) || fileList.length === 0) {
     throw new Error('Invalid file list');
@@ -175,14 +215,47 @@ function StaticCacher(fileList) {
 
 StaticCacher.prototype.onInstall = function sc_onInstall() {
   var self = this;
-  return CacheHelper.getDefaultCache().then(function(cache) {
-    return CacheHelper.addAll(cache, self.files);
+  return this.getDefaultCache().then(function(cache) {
+    return self.addAll(cache, self.files);
   });
 };
 
+StaticCacher.prototype.getDefaultCache = function sc_getDefaultCache() {
+  return caches.open('offline');
+};
+
+StaticCacher.prototype.addAll = function(cache, urls) {
+  if (!cache) {
+    throw new Error('Need a cache to store things');
+  }
+  // Polyfill until chrome implements it
+  if (typeof cache.addAll !== 'undefined') {
+    return cache.addAll(urls);
+  }
+
+  var promises = [];
+  var self = this;
+  urls.forEach(function(url) {
+    promises.push(self.fetchAndCache(new Request(url), cache));
+  });
+
+  return Promise.all(promises);
+};
+
+StaticCacher.prototype.fetchAndCache = function sc_fetchAndCache(request, cache) {
+
+  return fetch(request.clone()).then(function(response) {
+    if (parseInt(response.status) < 400) {
+      cache.put(request.clone(), response.clone());
+    }
+    return response;
+  });
+};
+
+
 module.exports = StaticCacher;
 
-},{"sw-cache-helper":6}],5:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 /* global fetch, BroadcastChannel, clients, Promise, Request, Response */
 'use strict';
 
@@ -433,7 +506,7 @@ ServiceWorkerWare.prototype.use = function sww_use() {
     throw new Error('No arguments given');
   }
   var mw = arguments[0];
-  var path = '/';
+  var path = '*';
   var method = this.router.ALL_METHODS;
   if (typeof mw === 'string') {
     path = arguments[0];
