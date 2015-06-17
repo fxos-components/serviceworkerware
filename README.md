@@ -126,7 +126,7 @@ If you want to respond from a middleware immediately and prevent other middlewar
 var worker = new self.ServiceWorkerWare();
 worker.use(function (req, res, endWith) {
   return endWith(
-    new Response('Hello world!, { headers: {'Content-Type': 'text/html'} });
+    new Response('Hello world!', { headers: {'Content-Type': 'text/html'} });
   );
 });
 worker.use(function (req, res, endWith) {
