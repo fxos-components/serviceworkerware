@@ -1,6 +1,6 @@
 {
   "name": "serviceworkers-ware",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "ServiceWorker framework to deal with common task managing request, allowing easy extensibility",
   "main": "dist/sww.js",
   "scripts": {

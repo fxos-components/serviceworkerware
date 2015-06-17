@@ -1,7 +1,7 @@
 {
   "name": "serviceworkerware",
   "main": "dist/sww.js",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "homepage": "https://github.com/gaia-components/serviceworkerware",
   "authors": [
     "Salvador de la Puente González <salva@unoyunodiez.com>",
