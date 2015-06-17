@@ -92,9 +92,10 @@ Router.prototype._sanitizeMethod = function(method) {
   return sanitizedMethod;
 };
 
-/*
-  Simple path-to-regex translation based on the Express "string-based path" syntax
-*/
+/**
+ * Simple path-to-regex translation based on the Express "string-based path"
+ * syntax.
+ */
 Router.prototype._parseSimplePath = function(path) {
   // Check for named placeholder crowding
   if (/\:[a-zA-Z0-9]+\:[a-zA-Z0-9]+/g.test(path)) {
@@ -102,7 +103,9 @@ Router.prototype._parseSimplePath = function(path) {
   }
 
   // Check for mixed placeholder crowdings
-  if (/(\*\:[a-zA-Z0-9]+)|(\:[a-zA-Z0-9]+\:[a-zA-Z0-9]+)|(\:[a-zA-Z0-9]+\*)/g.test(path.replace(/\\\*/g,''))) {
+  var mixedPlaceHolders =
+    /(\*\:[a-zA-Z0-9]+)|(\:[a-zA-Z0-9]+\:[a-zA-Z0-9]+)|(\:[a-zA-Z0-9]+\*)/g;
+  if (mixedPlaceHolders.test(path.replace(/\\\*/g,''))) {
     throw new Error('Invalid usage of named placeholders');
   }
 
@@ -204,6 +207,7 @@ SimpleOfflineCache.prototype.ensureCache = function soc_ensureCache() {
 module.exports = SimpleOfflineCache;
 
 },{"sw-cache-helper":6}],4:[function(require,module,exports){
+/* globals caches, Promise, Request */
 'use strict';
 
 function StaticCacher(fileList) {
@@ -242,7 +246,8 @@ StaticCacher.prototype.addAll = function(cache, urls) {
   return Promise.all(promises);
 };
 
-StaticCacher.prototype.fetchAndCache = function sc_fetchAndCache(request, cache) {
+StaticCacher.prototype.fetchAndCache =
+function sc_fetchAndCache(request, cache) {
 
   return fetch(request.clone()).then(function(response) {
     if (parseInt(response.status) < 400) {
