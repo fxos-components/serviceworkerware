@@ -47,6 +47,38 @@ worker.post('/event/*', analyticsMiddleware);
 More than one middleware can be registered with one worker. You just need to keep in mind that the `request` and `response` objects will be passed to each middleware in the same order that they were registered.
 
 
+## Specifying routes
+
+While registering your middlewares, you are not limited just to predefined paths, you have the choice to specify your routes by using *placeholders*. You could use placeholders as wildcards that match several different routes and handle them in your middleware registration. These placeholders are loosely based on [Express' path strings](http://expressjs.com/guide/routing.html#route-paths).
+
+Currently supported placeholders include:
+
+* Anonymous placeholder: `*`  
+Can accomodate any number of characters (including the empty string):
+  * `"*"` is the universal route -- it will match any path  
+  ```javascript
+worker.get('*'); // matches any path
+```
+  * `"/foo*"` will match `/foo` and any path downstream (like `/foo/bar/baz`)  
+  ```javascript
+worker.get('/foo*'); // will match /foo and any subpaths
+```
+
+* Named placeholder: `:<placeholder-name>`  
+Can accomodate any substring, but doesn't allow the empty string (matches minimum 1 character).  
+The placeholder name could be any number of alphanumeric characters:  
+  * `"/:path"' will match `/foo` and `/foo/bar/baz`, but won't match `/`  
+  ```javascript
+worker.get('/:path'); // won't match / as :path must not be empty
+```
+
+You could use the backslash character to escape special placeholders (and specify literal asterisks and/or colon characters in your code). *Note: in JavaScript string literals you must double the backslash to achieve the intended effect.*
+
+```javascript
+worker.get('/:param\\:42'); // will match /x:42 and /answer/is:42
+```
+
+
 ## Writing a middleware layer
 
 Each middleware instance is an object implementing one callback per `ServiceWorker` event type to be handled:
@@ -222,4 +254,3 @@ A lot of this code has been inspired by different projects:
 Mozilla Public License 2.0
 
 http://mozilla.org/MPL/2.0/
-
