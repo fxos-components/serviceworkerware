@@ -25,16 +25,19 @@ Router.prototype.methods = ['get', 'post', 'put', 'delete', 'head',
  * @param handler (Function) payload to be executed if url matches.
  */
 Router.prototype.add = function r_add(method, path, handler) {
-  var pathRegex;
+  var pathRegexAndTags, pathRegex, namedPlaceholders;
 
   method = this._sanitizeMethod(method);
 
   // Parse simle string path into regular expression for path matching
-  pathRegex = this._parseSimplePath(path);
+  pathRegexAndTags = this._parseSimplePath(path);
+  pathRegex = pathRegexAndTags.regexp;
+  namedPlaceholders = pathRegexAndTags.tags;
 
   this.stack.push({
     method: method,
     path: pathRegex,
+    namedPlaceholders: namedPlaceholders,
     handler: handler
   });
 };
@@ -70,18 +73,47 @@ Router.prototype.match = function r_match(method, url) {
   method = this._sanitizeMethod(method);
   var matches = [];
 
-  var self = this;
+  var _this = this;
   this.stack.forEach(function eachRoute(route) {
-    if (!(method === route.method || route.method === self.ALL_METHODS)) {
+    if (!(method === route.method || route.method === _this.ALL_METHODS)) {
       return;
     }
 
-    if (route.path.test(url)) {
+    var groups = _this._routeMatch(url, route);
+    if (groups) {
+      route.handler.__params = groups;
       matches.push(route.handler);
     }
   });
 
   return matches;
+};
+
+/**
+ * Performs a matching test for url against a route.
+ * @param {String} the url to test
+ * @param {route} the route to match against
+ * @return {Object} an object with the portions of the url matching the named
+ * placeholders or null if there is no match.
+ */
+Router.prototype._routeMatch = function (url, route) {
+  var groups = url.match(route.path);
+  if (!groups) { return null; }
+  return this._mapParameters(groups, route.namedPlaceholders);
+};
+
+/**
+ * Assign names from named placeholders in a route to the matching groups
+ * for an URL against that route.
+ * @param {Array} groups from a successful match
+ * @param {Array} names for those groups
+ * @return a map of names of named placeholders and values for those matches.
+ */
+Router.prototype._mapParameters = function (groups, placeholderNames) {
+  return placeholderNames.reduce(function (params, name, index) {
+    params[name] = groups[index + 1];
+    return params;
+  }, Object.create(null));
 };
 
 Router.prototype._sanitizeMethod = function(method) {
@@ -112,16 +144,19 @@ Router.prototype._parseSimplePath = function(path) {
   // Try parsing the string and converting special characters into regex
   try {
     // Parsing anonymous placeholders with simple backslash-escapes
-    path = path.replace(/(.|^)\*/g, function(m,escape) {
-      return escape==='\\' ? '\\*' : (escape+'(.*?)');
+    path = path.replace(/(.|^)[*]+/g, function(m,escape) {
+      return escape==='\\' ? '\\*' : (escape+'(?:.*?)');
     });
 
     // Parsing named placeholders with backslash-escapes
-    path = path.replace(/(.|^)\:([a-zA-Z0-9]+)/g, function(m,escape,tag) {
-      return escape==='\\' ? (':'+tag) : (escape+'(.+?)');
+    var tags = [];
+    path = path.replace(/(.|^)\:([a-zA-Z0-9]+)/g, function (m, escape, tag) {
+      if (escape === '\\') { return ':' + tag; }
+      tags.push(tag);
+      return escape + '(.+?)';
     });
 
-    return new RegExp(path + '$');
+    return { regexp: RegExp(path + '$'), tags: tags };
   }
 
   // Failed to parse final path as a RegExp
@@ -379,6 +414,7 @@ function (middleware, current, request, response) {
   }
 
   var mw = middleware[current];
+  if (request) { request.parameters = mw.__params; }
   var endWith = ServiceWorkerWare.endWith;
   var answer = mw(request, response, endWith);
   var normalized =
