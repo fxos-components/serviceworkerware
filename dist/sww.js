@@ -318,6 +318,7 @@ function ServiceWorkerWare(options) {
   if (typeof options === 'function' || options.onFetch) {
     options = { fallbackMiddleware: options };
   }
+  options.autoClaim = ('autoClaim' in options) ? options.autoClaim : true;
   this.middleware = [];
   this.router = new Router({});
   this.router.proxyMethods(this);
@@ -354,6 +355,8 @@ ServiceWorkerWare.prototype.handleEvent = function sww_handleEvent(evt) {
       this.onFetch(evt);
       break;
     case 'activate':
+      this.onActivate(evt);
+      break;
     case 'message':
     case 'beforeevicted':
     case 'evicted':
@@ -534,7 +537,7 @@ ServiceWorkerWare.prototype.onInstall = function sww_oninstall(evt) {
  * Walk all the installed middleware asking if they have prerequisites
  * (on the way of a promise to be resolved) when SW activates.
  */
-ServiceWorkerWare.prototype.onActivate = function sww_oninstall(evt) {
+ServiceWorkerWare.prototype.onActivate = function sww_activate(evt) {
   var activation = this.getFromMiddleware('onActivate');
   if (this.autoClaim) {
     activation =
