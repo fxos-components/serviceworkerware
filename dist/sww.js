@@ -217,7 +217,7 @@ SimpleOfflineCache.prototype.onFetch = function soc_onFetch(request, response) {
 
   var clone = request.clone();
   var _this = this;
-  debug('Handing fetch event: %s', clone.url);
+  debug('Handing fetch event: ' + clone.url);
   return this.ensureCache().then(function(cache) {
     return cache.match(clone, _this.options).then(function(res) {
       if (res) {
