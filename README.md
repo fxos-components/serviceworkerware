@@ -5,7 +5,7 @@
 **Compatibility**
 
 Currently working in:
-- [Chrome Canary](https://www.google.co.uk/chrome/browser/canary.html)
+- [Chrome](https://www.google.co.uk/chrome/browser/desktop/index.html)
 - [Mozilla Nightly](https://blog.wanderview.com/sw-builds/)
 
 ## Philosophy
@@ -112,7 +112,7 @@ Middlewares are tied to one or several URLs and executed in the same order you r
   * If returning only a `Request`, this will be the next request and the response remains the same as for the previous middleware.
   * The same happens if returning only a `Response`.
   * For backward-compatibility, returning `null` will set the next Response to `null`.
-  * Returning any other thing from a middleware will fail and cause a rejection. 
+  * Returning any other thing from a middleware will fail and cause a rejection.
 
 Finally, the answer from the service worker will be the response returned by the last middleware.
 
@@ -270,7 +270,7 @@ Once tests are complete, [Karma](http://karma-runner.github.io/0.12/index.html),
 
 This should be straightforward for Windows and iOS. As usual, if your are on Linux or you're having problems with binary routes, try setting some environment variables:
 ```bash
-$ FIREFOX_NIGHTLY_BIN=/path/to/nightly-bin CHROME_CANARY_BIN=/path/to/canary-bin gulp tests
+$ FIREFOX_NIGHTLY_BIN=/path/to/nightly-bin CHROME_BIN=/path/to/chrome-bin gulp tests
 ```
 
 ## Thanks!
