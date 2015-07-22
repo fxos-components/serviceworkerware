@@ -169,10 +169,8 @@ Router.prototype._parseSimplePath = function(path) {
 module.exports = Router;
 
 },{}],3:[function(require,module,exports){
-/* global Promise */
+/* global Promise, caches */
 'use strict';
-
-var cacheHelper = require('sw-cache-helper');
 
 var debug = 0 ? console.log.bind(console, '[SimpleOfflineCache]') :
  function(){};
@@ -183,11 +181,13 @@ var DEFAULT_MATCH_OPTIONS = {
   ignoreMethod: false,
   ignoreVary: false
 };
-var DEFAULT_MISS_POLICY = 'fetchAndChace';
+var DEFAULT_MISS_POLICY = 'fetch';
 // List of different policies
 var MISS_POLICIES = [
   DEFAULT_MISS_POLICY
 ];
+
+var DEFAULT_CACHE_NAME = 'offline';
 
 
 /**
@@ -199,7 +199,7 @@ var MISS_POLICIES = [
  *                 when hitting the cache.
  */
 function SimpleOfflineCache(cacheName, options, missPolicy) {
-  this.cacheName = cacheName || cacheHelper.defaultCacheName;
+  this.cacheName = cacheName || DEFAULT_CACHE_NAME;
   this.options = options || DEFAULT_MATCH_OPTIONS;
   this.missPolicy = missPolicy || DEFAULT_MISS_POLICY;
   if (MISS_POLICIES.indexOf(this.missPolicy) === -1) {
@@ -217,9 +217,9 @@ SimpleOfflineCache.prototype.onFetch = function soc_onFetch(request, response) {
 
   var clone = request.clone();
   var _this = this;
-  debug('Handing fetch event: %s', clone.url);
+  debug('Handing fetch event: ' + clone.url);
   return this.ensureCache().then(function(cache) {
-    return cache.match(request.clone(), _this.options).then(function(res) {
+    return cache.match(clone, _this.options).then(function(res) {
       if (res) {
         return res;
       }
@@ -227,21 +227,22 @@ SimpleOfflineCache.prototype.onFetch = function soc_onFetch(request, response) {
       // So far we just support one policy
       switch(_this.missPolicy) {
         case DEFAULT_MISS_POLICY:
-          return cacheHelper.fetchAndCache(request, cache);
+          return fetch(request);
       }
     });
   });
 };
 
 SimpleOfflineCache.prototype.ensureCache = function soc_ensureCache() {
-  return cacheHelper.getCache(this.cacheName).then(function(cache) {
-    return cache;
-  });
+  if (!this.cacheRequest) {
+    this.cacheRequest = caches.open(this.cacheName);
+  }
+  return this.cacheRequest;
 };
 
 module.exports = SimpleOfflineCache;
 
-},{"sw-cache-helper":6}],4:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 /* globals caches, Promise, Request */
 'use strict';
 
@@ -260,7 +261,10 @@ StaticCacher.prototype.onInstall = function sc_onInstall() {
 };
 
 StaticCacher.prototype.getDefaultCache = function sc_getDefaultCache() {
-  return caches.open('offline');
+  if (!this.cacheRequest) {
+    this.cacheRequest = caches.open('offline');
+  }
+  return this.cacheRequest;
 };
 
 StaticCacher.prototype.addAll = function(cache, urls) {
@@ -690,52 +694,7 @@ module.exports = {
   SimpleOfflineCache: SimpleOfflineCache
 };
 
-},{"./router.js":2,"./simpleofflinecache.js":3,"./staticcacher.js":4}],6:[function(require,module,exports){
-/* global caches, fetch, Promise, Request, module*/
-(function() {
-  'use strict';
-
-  var CacheHelper = {
-    defaultCacheName: 'offline',
-    getCache: function getCache(name) {
-      return caches.open(name);
-    },
-    getDefaultCache: function getDefaultCache() {
-      return this.getCache(this.defaultCacheName);
-    },
-    fetchAndCache: function fetchAndChache(request, cache) {
-      return fetch(request.clone()).then(function(response) {
-        var clone = response.clone();
-        if (parseInt(clone.status) < 400) {
-          cache.put(request.clone(), response.clone());
-        }
-
-        return response.clone();
-      });
-    },
-    addAll: function addAll(cache, urls) {
-      if (!cache) {
-        throw new Error('Need a cache to store things');
-      }
-      // Polyfill until chrome implements it
-      if (typeof cache.addAll !== 'undefined') {
-        return cache.addAll(urls);
-      }
-
-      var promises = [];
-      var self = this;
-      urls.forEach(function(url) {
-        promises.push(self.fetchAndCache(new Request(url), cache));
-      });
-
-      return Promise.all(promises);
-    }
-  };
-
-  module.exports = CacheHelper;
-})();
-
-},{}]},{},[1])
+},{"./router.js":2,"./simpleofflinecache.js":3,"./staticcacher.js":4}]},{},[1])
 
 
 //# sourceMappingURL=sww.js.map
