@@ -35,7 +35,8 @@ gulp.task('bundle-dist', function() {
       .pipe(source(getBundleName() + '.js'))
       .pipe(buffer())
       .pipe(removeLines({'filters': [
-        /performance/,
+        /performance\.mark/,
+        /performance\.measure/,
         /debug\(/
       ]}))
       .pipe(gulp.dest('./dist/'));
