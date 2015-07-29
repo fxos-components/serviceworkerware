@@ -16,5 +16,8 @@
   "node": true,
   "mocha": true,
   "worker": true,
-  "browserify": true
+  "browserify": true,
+  "globals": {
+    "performance": true
+  }
 }

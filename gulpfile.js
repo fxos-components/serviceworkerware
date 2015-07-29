@@ -9,6 +9,7 @@ var webserver = require('gulp-webserver');
 var jshint = require('gulp-jshint');
 var watch = require('gulp-watch');
 var karma = require('karma').server;
+var removeLines = require('gulp-remove-lines');
 
 var getBundleName = function () {
   return 'sww';
@@ -21,7 +22,30 @@ gulp.task('tests', function () {
   });
 });
 
-gulp.task('javascript', function() {
+gulp.task('bundle-dist', function() {
+  var bundler = browserify({
+    entries: ['./index.js'],
+    debug: false,
+    standAlone: 'ServiceWorkerWare'
+  });
+
+  var bundle = function() {
+    return bundler
+      .bundle()
+      .pipe(source(getBundleName() + '.js'))
+      .pipe(buffer())
+      .pipe(removeLines({'filters': [
+        /performance\.mark/,
+        /performance\.measure/,
+        /debug\(/
+      ]}))
+      .pipe(gulp.dest('./dist/'));
+  };
+
+  return bundle();
+});
+
+gulp.task('bundle-debug', function() {
 
   var bundler = browserify({
     entries: ['./index.js'],
@@ -61,4 +85,5 @@ gulp.task('lint', function() {
       .pipe(jshint.reporter('default'));
 });
 
-gulp.task('default', ['lint','javascript']);
+gulp.task('default', ['lint','bundle-dist']);
+gulp.task('debug', ['lint', 'bundle-debug'])
