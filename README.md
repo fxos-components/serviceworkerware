@@ -54,7 +54,7 @@ While registering your middlewares, you are not limited just to predefined paths
 Currently supported placeholders include:
 
 * Anonymous placeholder: `*`  
-Can accomodate any number of characters (including the empty string):
+Can accommodate any number of characters (including the empty string):
   * `"*"` is the universal route -- it will match any path  
   ```javascript
 worker.get('*'); // matches any path
@@ -65,7 +65,7 @@ worker.get('/foo*'); // will match /foo and any subpaths
 ```
 
 * Named placeholder: `:<placeholder-name>`  
-Can accomodate any substring, but doesn't allow the empty string (matches minimum 1 character).  
+Can accommodate any substring, but doesn't allow the empty string (matches minimum 1 character).  
 The placeholder name could be any number of alphanumeric characters:  
   * `"/:path"' will match `/foo` and `/foo/bar/baz`, but won't match `/`  
   ```javascript
