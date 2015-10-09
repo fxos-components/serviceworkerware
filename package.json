@@ -14,7 +14,6 @@
     "chai": "^2.2.0",
     "gulp": "^3.8.11",
     "gulp-jshint": "^1.9.2",
-    "gulp-remove-lines": "^0.1.0",
     "gulp-sourcemaps": "^1.3.0",
     "gulp-watch": "^4.1.1",
     "gulp-webserver": "^0.9.0",
@@ -25,9 +24,9 @@
     "karma-sinon": "^1.0.4",
     "karma-sw-mocha": "git://github.com/lodr/karma-sw-mocha.git#master",
     "mocha": "git://github.com/lodr/mocha.git#sw",
+    "preprocessify": "0.0.6",
     "sinon": "^1.14.1",
     "vinyl-buffer": "^1.0.0",
-    "karma-firefox-launcher": "^0.1.4",
     "vinyl-source-stream": "^1.0.0"
   }
 }

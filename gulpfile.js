@@ -9,7 +9,7 @@ var webserver = require('gulp-webserver');
 var jshint = require('gulp-jshint');
 var watch = require('gulp-watch');
 var karma = require('karma').server;
-var removeLines = require('gulp-remove-lines');
+var preprocessify = require('preprocessify');
 
 var getBundleName = function () {
   return 'sww';
@@ -26,19 +26,15 @@ gulp.task('bundle-dist', function() {
   var bundler = browserify({
     entries: ['./index.js'],
     debug: false,
-    standAlone: 'ServiceWorkerWare'
+    standAlone: 'ServiceWorkerWare',
   });
 
   var bundle = function() {
     return bundler
+      .transform(preprocessify())
       .bundle()
       .pipe(source(getBundleName() + '.js'))
       .pipe(buffer())
-      .pipe(removeLines({'filters': [
-        /performance\.mark/,
-        /performance\.measure/,
-        /debug\(/
-      ]}))
       .pipe(gulp.dest('./dist/'));
   };
 
@@ -55,6 +51,9 @@ gulp.task('bundle-debug', function() {
 
   var bundle = function() {
     return bundler
+      .transform(preprocessify(
+        { DEBUG: true }
+      ))
       .bundle()
       .pipe(source(getBundleName() + '.js'))
       .pipe(buffer())
