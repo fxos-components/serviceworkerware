@@ -26,7 +26,7 @@ gulp.task('bundle-dist', function() {
   var bundler = browserify({
     entries: ['./index.js'],
     debug: false,
-    standAlone: 'ServiceWorkerWare',
+    standAlone: 'ServiceWorkerWare'
   });
 
   var bundle = function() {
