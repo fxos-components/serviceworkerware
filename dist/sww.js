@@ -345,6 +345,10 @@ ServiceWorkerWare.prototype.init = function sww_init() {
 
   // misc events
   addEventListener('message', this);
+
+  // push notifications
+  addEventListener('push', this);
+
   // XXX: Add default configuration
 };
 
@@ -364,6 +368,7 @@ ServiceWorkerWare.prototype.handleEvent = function sww_handleEvent(evt) {
     case 'activate':
       this.onActivate(evt);
       break;
+    case 'push':
     case 'message':
     case 'beforeevicted':
     case 'evicted':
