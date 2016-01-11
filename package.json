@@ -23,7 +23,6 @@
     "karma-firefox-launcher": "^0.1.4",
     "karma-sinon": "^1.0.4",
     "karma-sw-mocha": "git://github.com/delapuente/karma-sw-mocha.git#master",
-    "mocha": "git://github.com/delapuente/mocha.git#sw",
     "preprocessify": "0.0.6",
     "sinon": "^1.14.1",
     "vinyl-buffer": "^1.0.0",
