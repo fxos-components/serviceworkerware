@@ -172,9 +172,6 @@ module.exports = Router;
 /* global Promise, caches */
 'use strict';
 
-var debug = 0 ? console.log.bind(console, '[SimpleOfflineCache]') :
- function(){};
-
 // Default Match options, not exposed.
 var DEFAULT_MATCH_OPTIONS = {
   ignoreSearch: false,
@@ -217,7 +214,6 @@ SimpleOfflineCache.prototype.onFetch = function soc_onFetch(request, response) {
 
   var clone = request.clone();
   var _this = this;
-  debug('Handing fetch event: ' + clone.url);
   return this.ensureCache().then(function(cache) {
     return cache.match(clone, _this.options).then(function(res) {
       if (res) {
@@ -304,7 +300,8 @@ module.exports = StaticCacher;
 /* global fetch, BroadcastChannel, clients, Promise, Request, Response */
 'use strict';
 
-var debug = 1 ? console.log.bind(console, '[ServiceWorkerWare]') : function(){};
+var debug = function(){};
+
 
 var StaticCacher = require('./staticcacher.js');
 var SimpleOfflineCache = require('./simpleofflinecache.js');
