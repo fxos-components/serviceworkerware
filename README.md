@@ -99,7 +99,7 @@ Also, in order to make it even more Express-like, you can write middleware in th
 ```javascript
 var worker = new self.ServiceWorkerWare();
 worker.get('/hello.html', function(request, response) {
-  return Promise.resolve(new Response('Hello world!'), { headers: {'Content-Type': 'text/html'} });
+  return Promise.resolve(new Response('Hello world!', { headers: {'Content-Type': 'text/html'} }));
 }
 worker.init();
 ```
