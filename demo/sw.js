@@ -24,7 +24,7 @@ worker.use(new self.StaticCacher(['a.html']));
 
 // Middleware example for handling 'virtual' urls and building the
 // response with js.
-worker.get('virtual/.', function(request, response) {
+worker.get('virtual/*', function(request, response) {
   var url = request.clone().url;
 
   var content = '<html><body>'
@@ -38,13 +38,31 @@ worker.get('virtual/.', function(request, response) {
   }));
 });
 
+function updateHeaders(origHeaders) {
+  var headers = new Headers();
+  for(var kv of origHeaders.entries()) {
+    headers.append(kv[0], kv[1]);
+  }
+
+  headers.append('X-Powered-By', 'HTML5 ServiceWorkers FTW');
+  return headers;
+}
+
 // Handles offline resources saved by the StaticCacher middleware,
 // also caches those resources not in the cache for next visit
 worker.use(new self.SimpleOfflineCache());
 worker.use(function(request, response) {
-  var res = response.clone();
-  res.headers.append('X-Powered-By', 'HTML5 ServiceWorkers FTW');
-
-  return Promise.resolve(res);
+  // Add an X-Powered-By header to all responses. We have to manually
+  // clone the response in order to modify the headers, see:
+  // http://stackoverflow.com/questions/35421179/how-to-alter-the-headers-of-a-response
+  return new Promise(function(resolve) {
+    return response.blob().then(function(blob) {
+      resolve(new Response(blob, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: updateHeaders(response.headers)
+      }));
+    });
+  });
 });
 worker.init();
