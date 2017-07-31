@@ -277,8 +277,8 @@ $ FIREFOX_NIGHTLY_BIN=/path/to/nightly-bin CHROME_BIN=/path/to/chrome-bin gulp t
 
 A lot of this code has been inspired by different projects:
 
-- [Firefox OS V3 Architecture] (https://github.com/fxos/contacts)
-- [Shed] (https://github.com/wibblymat/shed)
+- [Firefox OS V3 Architecture](https://github.com/fxos/contacts)
+- [Shed](https://github.com/wibblymat/shed)
 - [sw-precache](https://github.com/jeffposnick/sw-precache)
 - [offliner](https://github.com/lodr/offliner)
 
