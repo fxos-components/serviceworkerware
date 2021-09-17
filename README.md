@@ -67,7 +67,7 @@ worker.get('/foo*'); // will match /foo and any subpaths
 * Named placeholder: `:<placeholder-name>`  
 Can accommodate any substring, but doesn't allow the empty string (matches minimum 1 character).  
 The placeholder name could be any number of alphanumeric characters:  
-  * `"/:path"' will match `/foo` and `/foo/bar/baz`, but won't match `/`  
+  * `"/:path"` will match `/foo` and `/foo/bar/baz`, but won't match `/`  
   ```javascript
 worker.get('/:path'); // won't match / as :path must not be empty
 ```
